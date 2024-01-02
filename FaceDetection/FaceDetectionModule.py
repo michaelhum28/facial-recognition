@@ -2,35 +2,64 @@ import cv2
 import mediapipe as mp
 import time
 
-mpfaceDetection = mp.solutions.face_detection
-mpDraw = mp.solutions.drawing_utils
-faceDetection = mpfaceDetection.FaceDetection(0.75)
+class FaceDetector():
+    def __init__(self, minDetectionCon=0.5):
+        self.minDetectionCon=minDetectionCon
 
-while True:
-    success, img = cap.read()
+        self.mpfaceDetection = mp.solutions.face_detection
+        self.mpDraw = mp.solutions.drawing_utils
+        self.faceDetection = self.mpfaceDetection.FaceDetection(self.minDetectionCon)
 
-    imgRGB=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
-    results = faceDetection.process(imgRGB) #increases frame rate
-    print(results)
+    def findFaces(self, img, draw=True):
+        imgRGB=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+        self.results = self.faceDetection.process(imgRGB) #increases frame rate
+        #print(self.results)
+        bboxs = [] #for every proccess of a face
 
-    if results.detections:
-        for id, detection in enumerate(results.detections): #enumerate because we want id number too
-            # print(id,detection)
-            # print(detection.score)
-            # print(detection.location_data.relative_bounding_box)
-            # mpDraw.draw_detection(img,detection)#get points
-            bboxC = detection.location_data.relative_bounding_box #bounding box from class
-            ih,iw,ic = img.shape #get dimensions (image height, image width, image channel)
-            bbox = int(bboxC.xmin*iw), int(bboxC.ymin*ih), int(bboxC.width*iw), int(bboxC.height*ih)
-            cv2.rectangle(img,bbox,(255,0,255),2)
-            cv2.putText(img,f'{int(detection.score[0]*100)}%',(bbox[0],bbox[1]-20),cv2.FONT_HERSHEY_PLAIN,3,(0,255,0),2)
+        if self.results.detections:
+            for id, detection in enumerate(self.results.detections): #enumerate because we want id number too
+                bboxC = detection.location_data.relative_bounding_box #bounding box from class
+                ih,iw,ic = img.shape #get dimensions (image height, image width, image channel)
+                bbox = int(bboxC.xmin*iw), int(bboxC.ymin*ih), int(bboxC.width*iw), int(bboxC.height*ih)
+                bboxs.append([id, bbox,detection.score]) #id is the same index
+                img = self.fancyDraw(img,bbox)
+
+                cv2.rectangle(img,bbox,(255,0,255),2)
+                cv2.putText(img,f'{int(detection.score[0]*100)}%',(bbox[0],bbox[1]-20),cv2.FONT_HERSHEY_PLAIN,3,(0,255,0),2)
+        return img, bboxs
+    
+    def fancyDraw(self,img,bbox,l=30,t=7,rt=1): #rt = rectangle thickness
+        x,y,w,h=bbox
+        x1,y1 = x+y,w+h
+
+        cv2.rectangle(img,bbox,(255,0,255),rt)
+
+        #Top left x,y
+        cv2.line(img,(x,y),(x+l,y),(255,0,255),t)
+        cv2.line(img,(x,y),(x,y+l),(255,0,255),t)
+
+        #Top right x1,y
+        cv2.line(img,(x1,y),(x1-l,y),(255,0,255),t)
+        cv2.line(img,(x1,y),(x1,y+l),(255,0,255),t)
+
+        #Bottom left x,y1
+        cv2.line(img,(x,y1),(x+l,y1),(255,0,255),t)
+        cv2.line(img,(x,y1),(x,y1-l),(255,0,255),t)
+
+        #Bottom right x1,y1
+        cv2.line(img,(x1,y1),(x1-l,y1),(255,0,255),t)
+        cv2.line(img,(x1,y1),(x1,y1-l),(255,0,255),t)
+
+        return img
 
 def main():
     cap = cv2.VideoCapture(0)
     pTime = 0
+    detector = FaceDetector()
 
     while True:
         success, img = cap.read()
+        img,bboxs = detector.findFaces(img)
 
         cTime = time.time()
         fps = 1/(cTime-pTime)
