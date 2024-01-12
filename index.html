@@ -1,15 +1,44 @@
 <!DOCTYPE html>
-    <head>
-        <title>
-            Camera streaming
-        </title>
-    </head>
-    <body>
-        <video id="videoplayer" autoplay="true"></video>
-        <script src = "stream.js" type="text/javascript"></script>
-        <script>
-            var video = document.querySelector('#videoplayer')
-            stream(video)
-        </script>
-    </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Mesh Detection with Flask</title>
+</head>
+<body>
+    <h1>Face Mesh Detection with Flask</h1>
+    <video id="videoElement" width="640" height="480" autoplay></video>
+
+    <script>
+        function stream(videoElement) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function (stream) {
+                    videoElement.srcObject = stream;
+                })
+                .catch(function (error) {
+                    console.error('Error accessing webcam:', error);
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var videoElement = document.getElementById('videoElement');
+            stream(videoElement);
+        });
+    </script>
+
+    <script>
+        var socket = new WebSocket('ws://' + window.location.host + '/video_feed');
+
+        // Use different variable names for the two instances
+        var video1 = document.getElementById('videoElement');
+        var wsavc1 = new WSAvcPlayer(video1, "webgl", 1, 35);
+
+        var canvas = document.createElement('canvas');
+        var video2 = document.getElementById('videoElement');
+        var wsavc2 = new WSAvcPlayer(canvas, "webgl", 1, 35);
+
+        // Connect the first instance
+        wsavc1.connect(socket);
+    </script>
+</body>
 </html>
