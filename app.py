@@ -1,5 +1,4 @@
-from flask import Flask
-from flask import render_template
+from flask import Flask, render_template, jsonify
 import subprocess
 
 app = Flask(__name__)
@@ -10,8 +9,11 @@ def index():
 
 @app.route('/run_python_script')
 def run_python_script():
-    result = subprocess.run(['python', 'FaceMeshModule.py'], capture_output=True, text=True)
-    return result.stdout
+    try:
+        subprocess.run(['python', 'FaceMeshModule.py'])
+        return 'Python script executed successfully!'
+    except Exception as e:
+        return f'Error: {str(e)}'
 
 if __name__ == '__main__':
     app.run(debug=True)
